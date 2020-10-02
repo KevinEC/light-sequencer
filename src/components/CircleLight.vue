@@ -44,7 +44,7 @@ export default {
         colorComputed(){
             if(this.hold) return this.internalColor;
             if(this.color) return this.color
-            return undefined;
+            return "transparent";
         },
         transitionDurationComputed(){
             if(this.transitionDuration === null && this.transitionAttack === null) return this.transitionDurationDefault;
@@ -53,7 +53,9 @@ export default {
         colorStyleComputed(){
             return {
                 backgroundColor: this.colorComputed,
-                transition: `background-color ${this.transitionDurationComputed}s ${this.ease}`
+                boxShadow: `0 0 10px ${this.colorComputed}`,
+                transition: `background-color ${this.transitionDurationComputed}s ${this.ease},
+                             box-shadow ${this.transitionDurationComputed}s ${this.ease}`
             }
         },
     }
@@ -73,7 +75,7 @@ export default {
     .circle-light{
         height: 100%;
         width: 100%;
-        border: 1px solid rgb(119, 119, 119);
+        //border: 1px solid rgb(119, 119, 119);
         border-radius: 100%;
         display: flex;
         justify-content: center;

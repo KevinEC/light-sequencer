@@ -14,7 +14,7 @@
       <div v-if="light.break" class="break"></div>
     </template>
   </div>
-  <audio id="song" controls loop src="/song.mp3"></audio>
+  <audio id="song" controls src="/song.mp3"></audio>
 </template>
 
 <script>
@@ -61,12 +61,15 @@ export default {
   },
   mounted() {
     this.initAudioVariables();
+    this.initEventListeners();
   },
   data(){
     return {
       audioContext: null,
       track: null,
       audioElm: null,
+      audioSource: null,
+      audioBuffer: null,
       showHelpText: false,
       beat: 0,
       loop: null,
@@ -160,18 +163,33 @@ export default {
     toggleHelpText(){
       this.showHelpText = !this.showHelpText;
     },
-    initAudioVariables(){
-      if(this.audioContext == null) this.audioContext = new AudioContext();
-      if(this.audioElm == null) this.audioElm = document.querySelector('#song');
-      if(this.track == null) this.track = this.audioContext.createMediaElementSource(this.audioElm);
-      this.track.connect(this.audioContext.destination);
+    async initAudioVariables(){
+       if(this.audioContext == null) this.audioContext = new AudioContext();
+      // if(this.audioElm == null) this.audioElm = document.querySelector('#song');
+      // if(this.track == null) this.track = this.audioContext.createMediaElementSource(this.audioElm);
+      // this.track.connect(this.audioContext.destination);
+
+      if(this.audioSource == null) 
+        this.audioSource = this.audioContext.createBufferSource();
+      
+      let self = this;
+      this.audioBuffer = await fetch("/song.mp3")
+        .then(res => res.arrayBuffer())
+        .then(ArrayBuffer => self.audioContext.decodeAudioData(ArrayBuffer));
+
+      this.audioSource.buffer = this.audioBuffer;
+      this.audioSource.connect(this.audioContext.destination);
+      this.audioSource.loop = true;
+
+    },
+    initEventListeners(){
+      //this.audioElm.addEventListener('ended', this.onEnded);
+      //this.audioElm.addEventListener('timeupdate', this.onEnded);
     },
     start(){
-      console.log("audioContext", this.audioContext);
-      this.audioContext.resume();
-      this.audioElm.play();
+      this.audioSource.start(0);
       this.loop = window.setInterval(this.beatLoop, this.tempoComputed);
-    }
+    },
   }
 }
 </script>
