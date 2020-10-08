@@ -9,12 +9,12 @@
         :color="light.color"
         :transitionAttack="light.transitionAttack"
         :holdColor="light.holdColor"
+        :ease="light.ease"
         :pos="i+1"
       />
       <div v-if="light.break" class="break"></div>
     </template>
   </div>
-  <audio id="song" controls src="/song.mp3"></audio>
 </template>
 
 <script>
@@ -57,11 +57,75 @@ export default {
           return newLight;
         }, this)
       }
+    },
+    patternsComputed(){
+      return this.patterns;
     }
   },
   mounted() {
     this.initAudioVariables();
-    this.initEventListeners();
+    let clusterBl = [
+      { pos: 14, color: '#723d46', transitionAttack: 2, holdColor: true, ease: this.cubicInOut },
+      { pos: 7, color: '#e26d5c', transitionAttack: 2, holdColor: true, ease: this.cubicInOut },
+    ];
+
+    let clusterBlEnd = this.updateCluster(
+      clusterBl, 
+      ["color", "holdColor"], 
+      ["transparent", false]
+    );
+
+    let clusterTr = [
+      // { pos: 4, color: '#FFBF47', transitionAttack: 2, holdColor: true, ease: this.cubicInOut },
+      { pos: 3, color: '#FFBF47', transitionAttack: 2, holdColor: true, ease: this.cubicInOut },
+    ];
+
+    let clusterTrEnd = this.updateCluster(
+      clusterTr, 
+      ["color", "holdColor"], 
+      ["transparent", false]
+    );
+
+    let clusterSlow1 = [
+      { pos: 7, color: '#e26d5c', transitionAttack: 3, holdColor: true, ease: this.slowEaseIn },
+      { pos: 6, color: '#e26d5c', transitionAttack: 3, holdColor: true, ease: this.slowEaseIn },
+      { pos: 13, color: '#723d46', transitionAttack: 3, holdColor: true, ease: this.slowEaseIn },
+    ];
+
+    let clusterSlow1End = this.updateCluster(
+      clusterSlow1, 
+      ["color", "holdColor"], 
+      ["transparent", false]
+    );
+
+    let clusterWave = [
+      { pos: 14, color: '#723d46', transitionAttack: 2, holdColor: true, ease: this.slowEaseIn },
+      { pos: 11, color: '#FFBF47', transitionAttack: 2, holdColor: true, ease: this.slowEaseIn },
+      { pos: 13, color: '#723d46', transitionAttack: 2, holdColor: true, ease: this.slowEaseIn },
+      { pos: 7, color: '#723d46', transitionAttack: 2, holdColor: true, ease: this.slowEaseIn },
+      { pos: 6, color: '#FFBF47', transitionAttack: 2, holdColor: true, ease: this.slowEaseIn },
+      { pos: 2, color: '#723d46', transitionAttack: 2, holdColor: true, ease: this.slowEaseIn },
+      { pos: 1, color: '#FFBF47', transitionAttack: 2, holdColor: true, ease: this.slowEaseIn },
+    ];
+
+    let clusterWaveEnd = this.updateCluster(
+      clusterWave, 
+      ["color", "holdColor"], 
+      ["transparent", false]
+    );
+    
+    this.offsetClusterToLoop(clusterBl, 1, 2);
+    this.offsetClusterToLoop(clusterBlEnd, 7, 3);
+
+    this.appendPatternToBeat(clusterTr, 5);
+    this.appendPatternToBeat(clusterTrEnd, 11);
+
+    this.offsetClusterToLoop(clusterSlow1, 20, 1);
+    this.offsetClusterToLoop(clusterSlow1End, 26, 1);
+
+    console.log("clusterWave:", clusterWave);
+    this.offsetClusterToLoop(clusterWave, 24, 1);
+    this.offsetClusterToLoop(clusterWaveEnd, 28, 1);
   },
   data(){
     return {
@@ -73,10 +137,12 @@ export default {
       showHelpText: false,
       beat: 0,
       loop: null,
-      beatRange: 10, 
+      beatRange: 40, 
       bpm: 172,
       currentPattern: null,
       currentLights: null,
+      cubicInOut: "cubic-bezier(0.4, 0, 0.2, 1)",
+      slowEaseIn: "cubic-bezier(0.76, 0.07, 0.63, 0.82)",
       lights: [
         //15
         {
@@ -107,48 +173,30 @@ export default {
       ]
       ,
       patterns: [
-        {
-          beat: 1,
-          lights: [
-            { pos: 9, color: '#C9CBA3', transitionAttack: 1 },
-          ]
-        },
-        {
-          beat: 2,
-          lights: [
-            { pos: 4, color: '#C9CBA3' },
-          ]
-        },
-        {
-          beat: 3,
-          lights: [
-            { pos: 5, color: '#C9CBA3' },
-          ]
-        },
-        {
-          beat: 4,
-          lights: [
-            { pos: 6, color: '#C9CBA3' },
-          ]
-        },
-        {
-          beat: 5,
-          lights: [
-            { pos: 7, color: '#C9CBA3' },
-          ]
-        },
-        {
-          beat: 7,
-          lights: [
-            { pos: 1, color: '#C9CBA3' },
-          ]
-        },
-        {
-          beat: 6,
-          lights: [
-            { pos: 9, color: '#C9CBA3', transitionAttack: 1 },
-          ]
-        },
+        // {
+        //   beat: 1,
+        //   lights: [
+        //     { pos: 9, color: '#FFBF47' }
+        //   ]
+        // },
+        // {
+        //   beat: 3,
+        //   lights: [
+        //     { pos: 5, color: '#FFBF47' },
+        //   ]
+        // },
+        // {
+        //   beat: 5,
+        //   lights: [
+            
+        //   ]
+        // },
+        // {
+        //   beat: 7,
+        //   lights: [
+        //     { pos: 1, color: '#FFBF47' },
+        //   ]
+        // },
       ]
     }
   },
@@ -156,18 +204,13 @@ export default {
     beatLoop(){
       this.beat = (this.beat + 1) % (this.beatRange+1);
       if(this.beat === 0) this.beat = 1;
-
       this.currentPattern = this.patterns.find(pattern => pattern.beat === this.beat);
-      //console.log(this.currentLightsComputed);
     },
     toggleHelpText(){
       this.showHelpText = !this.showHelpText;
     },
     async initAudioVariables(){
        if(this.audioContext == null) this.audioContext = new AudioContext();
-      // if(this.audioElm == null) this.audioElm = document.querySelector('#song');
-      // if(this.track == null) this.track = this.audioContext.createMediaElementSource(this.audioElm);
-      // this.track.connect(this.audioContext.destination);
 
       if(this.audioSource == null) 
         this.audioSource = this.audioContext.createBufferSource();
@@ -182,14 +225,37 @@ export default {
       this.audioSource.loop = true;
 
     },
-    initEventListeners(){
-      //this.audioElm.addEventListener('ended', this.onEnded);
-      //this.audioElm.addEventListener('timeupdate', this.onEnded);
-    },
     start(){
       this.audioSource.start(0);
       this.loop = window.setInterval(this.beatLoop, this.tempoComputed);
     },
+    appendPatternToBeat(lights, beat){
+      let pattern = this.patterns.find(pattern => pattern.beat === beat);
+      if(pattern !== undefined)
+        pattern.lights = [...pattern.lights, ...lights];
+      else if(beat <= this.beatRange) {
+        pattern = {beat: beat, lights: [...lights]};
+        this.patterns.push(pattern);
+      }
+    },
+    updateCluster(cluster, props, values){
+      let result = cluster.map(light => { return {...light} });
+      result.forEach(light => {
+        props.forEach((prop, i) => {
+          light[prop] = values[i];
+        })
+      });
+      return result;
+    },
+    offsetClusterToLoop(cluster, beat, offset){
+      let index;
+      for(let i = 0; i < cluster.length; i++){
+        if(i > 0) index = beat + i + offset;
+        if(i === 0) index = beat
+        if(index > this.beatLoop) return;
+        this.appendPatternToBeat([cluster[i]], index);
+      }
+    }
   }
 }
 </script>
@@ -235,7 +301,8 @@ body{
   
   justify-content: center;
   border-radius: 70% 70% 50% 50%;
-  background-color: rgb(221, 221, 221);
+  overflow: hidden;
+  background-color: white;
   box-shadow: 0px 60px 30px rgba(0, 0, 0, 0.459),
               0 -10px 20px gray inset;
 }
