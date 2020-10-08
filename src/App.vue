@@ -1,4 +1,5 @@
 <template>
+<div>
   <div class="overlay">
     <button class="help-btn" @click="toggleHelpText">show positions</button>
     <button class="help-btn" @click="start">start</button>
@@ -11,10 +12,13 @@
         :holdColor="light.holdColor"
         :ease="light.ease"
         :pos="i+1"
+        :track="light.track"
+        @clicked="onLightClicked"
       />
       <div v-if="light.break" class="break"></div>
     </template>
   </div>
+</div>
 </template>
 
 <script>
@@ -133,12 +137,20 @@ export default {
       track: null,
       audioElm: null,
       audioSource: null,
+      audioSource2: null,
+      audioSource3: null,
       audioBuffer: null,
+      audioBuffer2: null,
+      audioBuffer3: null,
+      gain2: null,
+      gain3: null,
+      gain2Active: false,
+      gain3Active: false,
       showHelpText: false,
       beat: 0,
       loop: null,
       beatRange: 40, 
-      bpm: 172,
+      bpm: 200,
       currentPattern: null,
       currentLights: null,
       cubicInOut: "cubic-bezier(0.4, 0, 0.2, 1)",
@@ -146,11 +158,13 @@ export default {
       lights: [
         //15
         {
-          break: true
+          break: true,
+          track: 2,
         },
         { },
         {
-          break: true
+          break: true,
+          track: 3
         },
         { },
         { },
@@ -201,6 +215,13 @@ export default {
     }
   },
   methods: {
+    onLightClicked(track){
+
+      this["gain"+track+"Active"] = !this["gain"+track+"Active"];
+
+      if(this["gain"+track+"Active"]) this["gain"+track].gain.exponentialRampToValueAtTime(1, this.audioContext.currentTime + 2)
+      else this["gain"+track].gain.exponentialRampToValueAtTime(0.1, this.audioContext.currentTime + 2)
+    },
     beatLoop(){
       this.beat = (this.beat + 1) % (this.beatRange+1);
       if(this.beat === 0) this.beat = 1;
@@ -210,23 +231,63 @@ export default {
       this.showHelpText = !this.showHelpText;
     },
     async initAudioVariables(){
-       if(this.audioContext == null) this.audioContext = new AudioContext();
+      if(this.audioContext == null) this.audioContext = new AudioContext();
 
+      // audio 1
       if(this.audioSource == null) 
         this.audioSource = this.audioContext.createBufferSource();
       
       let self = this;
-      this.audioBuffer = await fetch("/song.mp3")
+      this.audioBuffer = await fetch("/real_final/base.mp3")
         .then(res => res.arrayBuffer())
         .then(ArrayBuffer => self.audioContext.decodeAudioData(ArrayBuffer));
-
+      
       this.audioSource.buffer = this.audioBuffer;
       this.audioSource.connect(this.audioContext.destination);
       this.audioSource.loop = true;
+      
+      // audio 2
+      if(this.audioSource2 == null) 
+        this.audioSource2 = this.audioContext.createBufferSource();
+      
+      this.gain2 = this.audioContext.createGain();
 
+      self = this;
+      this.audioBuffer2 = await fetch("/real_final/add_1.mp3")
+        .then(res => res.arrayBuffer())
+        .then(ArrayBuffer => self.audioContext.decodeAudioData(ArrayBuffer));
+
+
+      this.audioSource2.buffer = this.audioBuffer2;
+
+      this.audioSource2.connect(this.gain2);
+      this.gain2.connect(this.audioContext.destination);
+      this.audioSource2.loop = true;
+
+      // audio 3
+      if(this.audioSource3 == null) 
+        this.audioSource3 = this.audioContext.createBufferSource();
+      
+      this.gain3 = this.audioContext.createGain();
+
+      self = this;
+      this.audioBuffer3 = await fetch("/real_final/add_2.mp3")
+        .then(res => res.arrayBuffer())
+        .then(ArrayBuffer => self.audioContext.decodeAudioData(ArrayBuffer));
+
+
+      this.audioSource3.buffer = this.audioBuffer3;
+
+      this.audioSource3.connect(this.gain3);
+      this.gain3.connect(this.audioContext.destination);
+      this.audioSource3.loop = true;
     },
     start(){
       this.audioSource.start(0);
+      this.audioSource2.start(0);
+      this.audioSource3.start(0);
+      this.gain2.gain.setValueAtTime(0.01, 0);
+      this.gain3.gain.setValueAtTime(0.01, 0);
       this.loop = window.setInterval(this.beatLoop, this.tempoComputed);
     },
     appendPatternToBeat(lights, beat){

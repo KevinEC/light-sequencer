@@ -1,6 +1,6 @@
 <template>
 <div class="circle-light-root">
-  <div class="circle-light" :style="colorStyleComputed">
+  <div class="circle-light" :style="colorStyleComputed" @click="handleClick">
       {{ this.pos }}
   </div>
 </div>
@@ -19,10 +19,12 @@ export default {
         ease: {
             type: String,
             default: "ease-out"
-        }
+        },
+        track: Number
     },
     data() {
         return {
+            activated: false,
             backgroundColor: this.color,
             hold: false,
             internalColor: null,
@@ -42,6 +44,12 @@ export default {
     },
     computed: {
         colorComputed(){
+            if(this.activated && this.color && this.color != "transparent" ){
+                return this.color;
+            }
+            if(this.activated) {
+              return "red";  
+            } 
             if(this.hold) return this.internalColor;
             if(this.color) return this.color
             return "transparent";
@@ -58,6 +66,18 @@ export default {
                              box-shadow ${this.transitionDurationComputed}s ${this.ease}`
             }
         },
+        activatedComputed(){
+            return this.activated;
+        },
+
+    },
+    methods:{
+        handleClick(){
+            console.log("clicked in child");
+            this.activated = !this.activated;
+            this.$emit('clicked', this.track);
+        }
+
     }
 }
 </script>
