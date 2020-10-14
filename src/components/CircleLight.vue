@@ -1,5 +1,5 @@
 <template>
-<div class="circle-light-root">
+<div class="circle-light-root" :class="track !== undefined ? 'interactive' : '' ">
   <div class="circle-light" :style="colorStyleComputed" @click="handleClick">
       {{ this.pos }}
   </div>
@@ -48,7 +48,7 @@ export default {
                 return this.color;
             }
             if(this.activated) {
-              return "red";  
+              return "rgba(0,128,0, 0.3)";  
             } 
             if(this.hold) return this.internalColor;
             if(this.color) return this.color
@@ -100,6 +100,32 @@ export default {
         justify-content: center;
         align-items: center;
         color: transparent;
+    }
+}
+:root{
+    --interactive-color: rgba(0,128,0, 0.1);
+    --interactive-color-intense: rgba(0,128,0, 0.3);
+}
+
+.circle-light-root.interactive{
+    animation: MovingGlow 3s infinite;
+    border-radius: 100%;
+}
+
+@keyframes MovingGlow {
+    0%{
+        box-shadow: 5px 5px 10px var(--interactive-color),
+                inset 0 0 10px var(--interactive-color);
+    }
+
+    75%{
+        box-shadow: 2px -1px 10px var(--interactive-color-intense),
+                inset 0 0 10px var(--interactive-color-intense);
+    }
+
+    90%{
+        box-shadow: -1px 5px 10px var(--interactive-color),
+                inset 0 0 10px var(--interactive-color);
     }
 }
 

@@ -135,18 +135,9 @@ export default {
     return {
       audioContext: null,
       track: null,
-      audioElm: null,
-      audioSource: null,
-      audioSource2: null,
-      audioSource3: null,
-      audioBuffer: null,
-      audioBuffer2: null,
-      audioBuffer3: null,
-      gain2: null,
-      gain3: null,
-      gain2Active: false,
-      gain3Active: false,
       showHelpText: false,
+      numAudioSources: 0,
+      numActiveAudio: 1,
       beat: 0,
       loop: null,
       beatRange: 40, 
@@ -161,66 +152,46 @@ export default {
           break: true,
           track: 2,
         },
-        { },
+        {  },
         {
+          track: 9,
           break: true,
-          track: 3
         },
         { },
-        { },
+        { track: 7 },
         {
           break: true
         },
-        { },
-        { },
-        { },
+        { track: 4 },
+        { track: 10 },
+        { track: 3 },
         {
           break: true
         },
-        { },
-        { },
+        { track: 8 },
+        { track: 5 },
         {
           break: true
         },
-        { },
+        { track: 6 },
         { }
-      ]
-      ,
-      patterns: [
-        // {
-        //   beat: 1,
-        //   lights: [
-        //     { pos: 9, color: '#FFBF47' }
-        //   ]
-        // },
-        // {
-        //   beat: 3,
-        //   lights: [
-        //     { pos: 5, color: '#FFBF47' },
-        //   ]
-        // },
-        // {
-        //   beat: 5,
-        //   lights: [
-            
-        //   ]
-        // },
-        // {
-        //   beat: 7,
-        //   lights: [
-        //     { pos: 1, color: '#FFBF47' },
-        //   ]
-        // },
-      ]
+      ],
+      patterns: []
     }
   },
   methods: {
     onLightClicked(track){
-
+      console.log(this);
       this["gain"+track+"Active"] = !this["gain"+track+"Active"];
 
-      if(this["gain"+track+"Active"]) this["gain"+track].gain.exponentialRampToValueAtTime(1, this.audioContext.currentTime + 2)
-      else this["gain"+track].gain.exponentialRampToValueAtTime(0.1, this.audioContext.currentTime + 2)
+      if(this["gain"+track+"Active"]){
+        ++this.numActiveAudio;
+        this["gain"+track].gain.exponentialRampToValueAtTime(0.7, this.audioContext.currentTime + 2)
+      } 
+      else {
+        --this.numActiveAudio;
+        this["gain"+track].gain.exponentialRampToValueAtTime(0.1, this.audioContext.currentTime + 2)
+      }
     },
     beatLoop(){
       this.beat = (this.beat + 1) % (this.beatRange+1);
@@ -233,62 +204,43 @@ export default {
     async initAudioVariables(){
       if(this.audioContext == null) this.audioContext = new AudioContext();
 
-      // audio 1
-      if(this.audioSource == null) 
-        this.audioSource = this.audioContext.createBufferSource();
-      
-      let self = this;
-      this.audioBuffer = await fetch("/real_final/base.mp3")
-        .then(res => res.arrayBuffer())
-        .then(ArrayBuffer => self.audioContext.decodeAudioData(ArrayBuffer));
-      
-      this.audioSource.buffer = this.audioBuffer;
-      this.audioSource.connect(this.audioContext.destination);
-      this.audioSource.loop = true;
-      
-      // audio 2
-      if(this.audioSource2 == null) 
-        this.audioSource2 = this.audioContext.createBufferSource();
-      
-      this.gain2 = this.audioContext.createGain();
+      await this.createAudioSource("/real_final/base.mp3");
 
-      self = this;
-      this.audioBuffer2 = await fetch("/real_final/add_1.mp3")
-        .then(res => res.arrayBuffer())
-        .then(ArrayBuffer => self.audioContext.decodeAudioData(ArrayBuffer));
-
-
-      this.audioSource2.buffer = this.audioBuffer2;
-
-      this.audioSource2.connect(this.gain2);
-      this.gain2.connect(this.audioContext.destination);
-      this.audioSource2.loop = true;
-
-      // audio 3
-      if(this.audioSource3 == null) 
-        this.audioSource3 = this.audioContext.createBufferSource();
-      
-      this.gain3 = this.audioContext.createGain();
-
-      self = this;
-      this.audioBuffer3 = await fetch("/real_final/add_2.mp3")
-        .then(res => res.arrayBuffer())
-        .then(ArrayBuffer => self.audioContext.decodeAudioData(ArrayBuffer));
-
-
-      this.audioSource3.buffer = this.audioBuffer3;
-
-      this.audioSource3.connect(this.gain3);
-      this.gain3.connect(this.audioContext.destination);
-      this.audioSource3.loop = true;
+      await this.createAudioSource("/real_final/add_2.mp3");
+      await this.createAudioSource("/real_final/add_3.mp3");
+      await this.createAudioSource("/real_final/add_1.mp3");
+      await this.createAudioSource("/real_final/kicks.wav");
+      await this.createAudioSource("/real_final/hats.wav");
+      await this.createAudioSource("/real_final/add_4.mp3");
+      await this.createAudioSource("/real_final/add_5.mp3");
+      await this.createAudioSource("/real_final/add_6.mp3");
+      await this.createAudioSource("/real_final/add_7.mp3");
     },
     start(){
-      this.audioSource.start(0);
-      this.audioSource2.start(0);
-      this.audioSource3.start(0);
-      this.gain2.gain.setValueAtTime(0.01, 0);
-      this.gain3.gain.setValueAtTime(0.01, 0);
+      for(let i = 1; i <= this.numAudioSources; i++) {
+        this["audioSource" + i].start(0);
+
+        // init base track as on and the rest as muted
+        if(i === 1) this["gain" + i].gain.setValueAtTime(1, 0);
+        else this["gain" + i].gain.setValueAtTime(0.01, 0);
+      }
       this.loop = window.setInterval(this.beatLoop, this.tempoComputed);
+    },
+    async createAudioSource(filePath){
+      let num = ++this.numAudioSources;
+      this["audioSource" + num] = this.audioContext.createBufferSource();
+      this["gain" + num] = this.audioContext.createGain();
+      
+      let self = this;
+      this["audioBuffer" + num] = await fetch(filePath)
+        .then(res => res.arrayBuffer())
+        .then(ArrayBuffer => self.audioContext.decodeAudioData(ArrayBuffer));
+      
+      this["audioSource" + num].buffer = this["audioBuffer" + num];
+
+      this["audioSource" + num].connect(this["gain" + num]);
+      this["gain" + num].connect(this.audioContext.destination);
+      this["audioSource" + num].loop = true;
     },
     appendPatternToBeat(lights, beat){
       let pattern = this.patterns.find(pattern => pattern.beat === beat);
